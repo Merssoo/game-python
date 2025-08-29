@@ -142,10 +142,8 @@ def game_loop():
                 if max_enemies < 15:
                     max_enemies += 1
 
-        # **(1) Atualiza a lógica de movimento e estado dos sprites APENAS UMA VEZ**
         all_sprites.update()
 
-        # Verifica colisão somente se a nave do jogador não estiver explodindo
         if player and not player_exploding:
             player_hits = pygame.sprite.spritecollide(player, enemies, True, pygame.sprite.collide_circle)
             for hit in player_hits:
@@ -163,7 +161,6 @@ def game_loop():
                 enemies.add(new_enemy)
                 all_sprites.add(new_enemy)
 
-        # Colisão entre os tiros e os inimigos
         bullet_hits = pygame.sprite.groupcollide(bullets, enemies, True, True)
         for hit in bullet_hits:
             som_explosao.play()
@@ -172,18 +169,12 @@ def game_loop():
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
 
-        # Transição para a tela de Game Over apenas após a animação da explosão terminar
         if player_exploding and player_explosion_sprite and not player_explosion_sprite.alive():
             game_state = "GAME_OVER"
 
-        # **(2) ORDEM CORRETA DE DESENHO PARA OS EFEITOS VISUAIS**
         screen.blit(background_img, (0, 0))
 
-        # Desenha a propulsão ANTES do jogador para o efeito visual de "atrás"
-        if player and not player_exploding:
-            player.draw_thruster(screen)
-
-        # Desenha todos os outros sprites (incluindo o jogador)
+        # Desenha todos os sprites, sem exceção
         all_sprites.draw(screen)
 
         # Desenha pontuação e vidas
