@@ -222,7 +222,7 @@ def game_loop():
         for hit in bullet_hits:
             som_explosao.play()
             score += 1
-            if score % 50 == 0:
+            if score % 20 == 0:
                 player.grant_3_shots_bonus()
                 print("Bônus de 3 tiros disponível!")
 
