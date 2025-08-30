@@ -41,6 +41,10 @@ enemies = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 player = None
 
+# Nova variável global para controlar o disparo
+last_shot_time = pygame.time.get_ticks()
+shot_delay = 200  # 200 milissegundos entre tiros
+
 
 def reset_game():
     global player, enemies, all_sprites, bullets, score, lives, start_time, max_enemies
@@ -144,7 +148,7 @@ def controls_screen():
 
 
 def game_loop():
-    global game_state, score, lives, max_enemies, player
+    global game_state, score, lives, max_enemies, player, last_shot_time
 
     player_exploding = False
     player_explosion_sprite = None
@@ -165,12 +169,6 @@ def game_loop():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    som_tiro.play()
-                    if player:
-                        bullet = player.shoot()
-                        all_sprites.add(bullet)
-                        bullets.add(bullet)
                 if event.key == pygame.K_LCTRL:
                     if player and player.bonus_3_shots_active:
                         som_tiro.play()
@@ -189,6 +187,17 @@ def game_loop():
             if event.type == difficulty_event:
                 if max_enemies < 15:
                     max_enemies += 1
+
+        # Lógica para tiro contínuo ao segurar a tecla de espaço
+        keys = pygame.key.get_pressed()
+        now = pygame.time.get_ticks()
+        if keys[pygame.K_SPACE] and now - last_shot_time > shot_delay:
+            som_tiro.play()
+            if player:
+                bullet = player.shoot()
+                all_sprites.add(bullet)
+                bullets.add(bullet)
+            last_shot_time = now
 
         all_sprites.update()
 
@@ -213,7 +222,7 @@ def game_loop():
         for hit in bullet_hits:
             som_explosao.play()
             score += 1
-            if score % 20 == 0:
+            if score % 50 == 0:
                 player.grant_3_shots_bonus()
                 print("Bônus de 3 tiros disponível!")
 
