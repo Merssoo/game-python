@@ -55,9 +55,6 @@ def reset_game():
     bullets.empty()
     all_sprites.empty()
 
-    for _ in range(max_enemies):
-        enemies.add(Enemy())
-
     all_sprites.add(player, *enemies, bullets)
 
 
@@ -84,12 +81,18 @@ def main_menu():
         start_text = font.render("Clique para Iniciar", 1, WHITE)
         start_rect = start_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
 
+        controls_text = font.render("Controles", 1, WHITE)
+        controls_rect = controls_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+
         mouse_pos = pygame.mouse.get_pos()
 
         if start_rect.collidepoint(mouse_pos):
             start_text = font.render("Clique para Iniciar", 1, GREEN)
+        if controls_rect.collidepoint(mouse_pos):
+            controls_text = font.render("Controles", 1, GREEN)
 
         screen.blit(start_text, start_rect)
+        screen.blit(controls_text, controls_rect)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -99,6 +102,43 @@ def main_menu():
                 if start_rect.collidepoint(mouse_pos):
                     reset_game()
                     game_state = "PLAYING"
+                if controls_rect.collidepoint(mouse_pos):
+                    game_state = "CONTROLS"
+
+        pygame.display.flip()
+
+
+def controls_screen():
+    global game_state
+
+    WHITE = (255, 255, 255)
+    GREEN = (0, 255, 0)
+
+    while game_state == "CONTROLS":
+        screen.blit(background_img, (0, 0))
+
+        draw_text("Controles", font, WHITE, screen, WIDTH // 2, HEIGHT // 3)
+        draw_text("SETAS: Mover", score_font, WHITE, screen, WIDTH // 2, HEIGHT // 2 - 30)
+        draw_text("ESPAÇO: Atirar", score_font, WHITE, screen, WIDTH // 2, HEIGHT // 2)
+        draw_text("CTRL: Bônus de 3 tiros", score_font, WHITE, screen, WIDTH // 2, HEIGHT // 2 + 30)
+        draw_text("ALT: Bônus de velocidade", score_font, WHITE, screen, WIDTH // 2, HEIGHT // 2 + 60)
+
+        back_text = font.render("Voltar ao Menu", 1, WHITE)
+        back_rect = back_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 150))
+
+        mouse_pos = pygame.mouse.get_pos()
+        if back_rect.collidepoint(mouse_pos):
+            back_text = font.render("Voltar ao Menu", 1, GREEN)
+
+        screen.blit(back_text, back_rect)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_rect.collidepoint(mouse_pos):
+                    game_state = "MENU"
 
         pygame.display.flip()
 
@@ -131,6 +171,14 @@ def game_loop():
                         bullet = player.shoot()
                         all_sprites.add(bullet)
                         bullets.add(bullet)
+                if event.key == pygame.K_LCTRL:
+                    if player and player.bonus_3_shots_active:
+                        som_tiro.play()
+                        player.shoot_bonus(all_sprites, bullets)
+                if event.key == pygame.K_LALT:
+                    if player and player.speed_bonus_active:
+                        player.activate_speed_bonus()
+                        print("Bônus de velocidade ativado!")
 
             if event.type == spawn_enemy_event:
                 if len(enemies) < max_enemies:
@@ -165,6 +213,14 @@ def game_loop():
         for hit in bullet_hits:
             som_explosao.play()
             score += 1
+            if score % 20 == 0:
+                player.grant_3_shots_bonus()
+                print("Bônus de 3 tiros disponível!")
+
+            if score % 20 == 0:
+                player.grant_speed_bonus()
+                print("Bônus de velocidade disponível!")
+
             new_enemy = Enemy()
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
@@ -173,15 +229,17 @@ def game_loop():
             game_state = "GAME_OVER"
 
         screen.blit(background_img, (0, 0))
-
-        # Desenha todos os sprites, sem exceção
         all_sprites.draw(screen)
 
-        # Desenha pontuação e vidas
         time_elapsed = (pygame.time.get_ticks() - start_time) // 1000
         draw_text(f"Tempo: {time_elapsed}", score_font, (255, 255, 255), screen, 100, 20)
         draw_text(f"Pontos: {score}", score_font, (255, 255, 255), screen, WIDTH // 2, 20)
         draw_text(f"Vidas: {lives}", score_font, (255, 255, 255), screen, WIDTH - 100, 20)
+
+        if player and (player.bonus_3_shots_active or player.speed_bonus_active):
+            draw_text("BÔNUS DISPONÍVEL", score_font, (0, 255, 0), screen, WIDTH // 2, 50)
+        if player and player.speed > player.base_speed:
+            draw_text("VELOCIDADE ATIVA", score_font, (0, 255, 0), screen, WIDTH // 2, 80)
 
         pygame.display.flip()
 
@@ -238,3 +296,5 @@ while True:
         game_loop()
     elif game_state == "GAME_OVER":
         game_over_screen()
+    elif game_state == "CONTROLS":
+        controls_screen()
